@@ -7,6 +7,15 @@ const DWELL = 20000; // 停車時間（実時間 ms）
 const SPEEDS = [1, 2, 4, 10];
 const SFX_MODES = { sound: '効果音', both: '効果音＋バイブ', vibe: 'バイブ', off: '効果音・バイブ：オフ' };
 const STORE = 'eki-timer:settings';
+// バイブのパターン（ms。振動・休み・振動…）。短すぎると気づかないので 200ms 以上にする
+const VIBE = {
+  check: 200,                                  // ベルを切り替えたとき
+  door: [200, 100, 200],                       // 出発・ドアが閉まる
+  soon: 200,                                   // まもなく
+  arrive: [300, 150, 300],                     // 駅に着いた
+  arriveShort: 300,                            // 駅間が短いとき
+  finish: [500, 200, 500, 200, 500, 200, 500], // 終点
+};
 
 // 選んでいる区間（dirTouched は回り方を自分で選んだか。選んでいなければ近いほうにする）
 const sel = { line: 'yamanote', from: 0, to: 11, dir: 'cw', dirTouched: false };
@@ -155,7 +164,7 @@ $('optSfx').addEventListener('click', () => {
   const ks = Object.keys(SFX_MODES);
   sfxMode = ks[(ks.indexOf(sfxMode) + 1) % ks.length];
   renderSfx(); toast(SFX_MODES[sfxMode]); save();
-  if (sfxMode === 'both' || sfxMode === 'vibe') { snd.opt.vibe = true; snd.buzz(80); } // その場で一度ふるわせて確かめられるように
+  if (sfxMode === 'both' || sfxMode === 'vibe') { snd.opt.vibe = true; snd.buzz(VIBE.check); } // その場で一度ふるわせて確かめられるように
 });
 // 早送り：押すたびに 通常 → 2倍 → 4倍 → 10倍 → 通常
 $('optSpeed').addEventListener('click', () => {
@@ -210,17 +219,17 @@ function fire(e) {
   const nx = e.k !== undefined ? stationAt(e.k + 1)[1] : null;
   switch (e.type) {
     case 'start': {
-      snd.doorClose(); snd.buzz([60, 60, 60]);
+      snd.doorClose(); snd.buzz(VIBE.door);
       const dest = stationAt(plan.path.length - 1)[1];
       if (plan.brief) snd.say(`${L.name}、${DIR_NAME[plan.dir]}。${dest}まで。`);
       else snd.say(`ご乗車ありがとうございます。この電車は、${L.name}、${DIR_NAME[plan.dir]}です。${dest}まで、${plan.path.length - 1}駅、およそ${Math.round(plan.total / 60000)}分です。次は、${stationAt(1)[1]}、${stationAt(1)[1]}。`);
       break;
     }
-    case 'close': snd.doorClose(); snd.buzz([60, 60, 60]); break;
+    case 'close': snd.doorClose(); snd.buzz(VIBE.door); break;
     case 'next': snd.say(`次は、${nx}、${nx}。`); break;
-    case 'soon': snd.chime(); snd.buzz(80); snd.say(`まもなく、${nx}です。`); break;
+    case 'soon': snd.chime(); snd.buzz(VIBE.soon); snd.say(`まもなく、${nx}です。`); break;
     case 'arrive':
-      snd.chime(); snd.buzz(e.short ? 120 : [200, 100, 200]);
+      snd.chime(); snd.buzz(e.short ? VIBE.arriveShort : VIBE.arrive);
       if (e.short) snd.say(nx, true);
       else { snd.doorOpen(); snd.say(`${nx}、${nx}です。`); }
       break;
@@ -273,7 +282,7 @@ function depart() {
 function finish() {
   state = 'done';
   snd.rumbleStop(); unlock();
-  snd.finale(); snd.buzz([400, 150, 400, 150, 700]);
+  snd.finale(); snd.buzz(VIBE.finish);
   const d = stationAt(plan.path.length - 1);
   snd.say(`${d[1]}、${d[1]}です。ご乗車、おつかれさまでした。時間です。`, true);
   $('btnPause').textContent = 'もう一度乗る'; $('btnPause').className = 'primary';
