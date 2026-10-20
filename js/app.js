@@ -71,7 +71,7 @@ function renderPick(opts) {
       ? `<circle class="mk ${isFrom ? 'mk-from' : 'mk-to'}" cx="${x}" cy="${y}" r="11"/>
          <text class="mk-text" x="${x}" y="${y}" font-size="12" text-anchor="middle" dominant-baseline="central">${isFrom && isTo ? '周' : isFrom ? '乗' : '降'}</text>`
       : `<circle class="pd" cx="${x}" cy="${y}" r="5"/>`;
-    s += `<text class="pl" ${g.label(L.ang[i], 17)} style="font-size:${labelSize(st[0])}px">${st[0]}</text></g>`;
+    s += `<text class="pl" ${g.label(L.ang[i], 15)} style="font-size:${labelSize(st[0])}px">${st[0]}</text></g>`;
   });
   const [f, t] = [L.st[sel.from][0], L.st[sel.to][0]];
   if (choosing) {

@@ -158,4 +158,6 @@ body.riding main { padding: 12px; }
   #map { width: 100%; height: 100%; }
   .lcd-main { padding: 10px 12px; }
   .lcd-name { font-size: min(48px, calc(100cqw / (var(--n, 4) * 1.1))); }
+  /* 設定画面の輪もカードの余白まで広げて、乗車中の輪と同じ大きさにする */
+  #pick { width: calc(100% + 32px); margin: 0 -16px; }
 }
