@@ -1,0 +1,161 @@
+:root {
+  --bg: #0e141b;
+  --panel: #17202a;
+  --panel2: #1f2a36;
+  --text: #e8eef4;
+  --muted: #8a9aab;
+  --border: #2c3a48;
+  --rail: #3a4856;    /* 路線図の線路 */
+  --dim: #4d5b68;     /* 区間外の駅 */
+  --passed: #6f7f8f;  /* 通過済みの駅 */
+  --ink: #0b1209;     /* 路線の色の上に載せる文字 */
+  --lcd: #05080b;
+  --lcd-text: #f5f7fa;
+  --accent: #ffcc33;
+  --line: #80c241;    /* 選んでいる路線の色（JS で差し替え） */
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+  line-height: 1.5;
+}
+button { font-family: inherit; cursor: pointer; }
+[hidden] { display: none !important; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+header { padding: 20px 16px 8px; max-width: 672px; margin: 0 auto; }
+header h1 { margin: 0; font-size: 22px; letter-spacing: .04em; }
+main { max-width: 1080px; margin: 0 auto; padding: 8px 16px 40px; }
+
+/* ===== 路線図（設定画面・乗車中で共通） ===== */
+.rail { fill: none; stroke: var(--rail); stroke-width: 10; }
+.route-line { fill: none; stroke: var(--line); stroke-width: 10; stroke-linecap: round; }
+.route-line.faint { opacity: .45; }
+.t-strong, .t-muted, .t-accent { text-anchor: middle; }
+.t-strong { fill: var(--text); font-weight: 800; }
+.t-muted { fill: var(--muted); }
+.t-accent { fill: var(--accent); }
+.t-bold { font-weight: 700; }
+
+/* ===== 設定画面 ===== */
+.setup { max-width: 640px; margin: 0 auto; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+.field { margin-bottom: 16px; }
+.seg { display: flex; gap: 8px; flex-wrap: wrap; }
+.seg button {
+  flex: 1; min-width: 120px; padding: 10px 12px; border-radius: 10px; font-size: 15px;
+  background: var(--panel2); color: var(--text); border: 2px solid var(--border);
+}
+.seg button.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 18%, var(--panel2)); }
+.seg button i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-right: 6px; }
+
+#pick { width: 100%; max-height: 72vh; display: block; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+#pick .pk, #pick .dt { cursor: pointer; }
+#pick .hit { fill: transparent; }
+#pick .pd { fill: #55636f; }
+#pick .pk.route .pd { fill: #fff; }
+#pick .pl { fill: var(--muted); }
+#pick .pk.route .pl { fill: var(--text); font-weight: 700; }
+#pick .pk.end .pl { fill: var(--accent); font-weight: 800; }
+#pick .mk { stroke: var(--line); stroke-width: 3; }
+#pick .mk-from { fill: var(--accent); }
+#pick .mk-to { fill: #fff; }
+#pick .mk-text { fill: var(--ink); font-weight: 800; }
+#pick .dt rect { fill: var(--panel2); stroke: var(--rail); stroke-width: 2; }
+#pick .dt.on rect { fill: var(--line); stroke: var(--line); }
+#pick .dt text { text-anchor: middle; }
+#pick .dt-name { fill: var(--muted); font-weight: 700; }
+#pick .dt-time { fill: var(--text); font-weight: 800; }
+#pick .dt.on .dt-name, #pick .dt.on .dt-time { fill: var(--ink); }
+#pick .dt-was { text-decoration: line-through; opacity: .7; }
+/* 指で触る端末では、タップ後に色が残らないようホバーを付けない */
+@media (hover: hover) {
+  #pick .pk:hover .pl { fill: #fff; }
+  #pick .pk:hover .pd { fill: var(--accent); }
+}
+
+/* オプション：アイコンでオン・オフ */
+.opts { display: flex; justify-content: center; gap: 12px; margin: 4px 0 14px; }
+.tg {
+  position: relative; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  color: var(--muted); border: 1.5px solid var(--border); background: transparent; transition: .15s;
+}
+.tg input { position: absolute; opacity: 0; pointer-events: none; }
+.tg svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tg .slash { stroke: var(--muted); }
+.tg:has(input:checked), .tg.on {
+  color: var(--line); border-color: color-mix(in srgb, var(--line) 60%, transparent);
+  background: color-mix(in srgb, var(--line) 14%, transparent);
+}
+.tg:has(input:checked) .slash { display: none; }
+.tg:has(input:focus-visible) { outline: 2px solid var(--line); outline-offset: 2px; }
+.tg:has(input:disabled) { opacity: .35; cursor: not-allowed; }
+/* ベル：効果音 / 効果音＋バイブ / バイブ / オフ でアイコンを描き分ける */
+.sfx .ip, .sfx .iz, .sfx .slash { display: none; }
+.sfx[data-mode=both] .iz { display: inline; }
+.sfx[data-mode=both] .ib { transform: scale(.66); transform-origin: 12px 12px; }
+.sfx[data-mode=vibe] .ib { display: none; }
+.sfx[data-mode=vibe] .ip, .sfx[data-mode=vibe] .iz { display: inline; }
+.sfx[data-mode=off] .slash { display: inline; }
+/* 早送り：倍率のバッジ */
+.spd b {
+  position: absolute; right: -6px; bottom: -4px; min-width: 22px; padding: 1px 4px; border-radius: 999px;
+  background: var(--line); color: var(--ink); font-size: 11px; font-weight: 800; line-height: 1.4;
+}
+.spd b:empty { display: none; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
+  background: #000c; color: var(--text); padding: 8px 14px; border-radius: 999px; font-size: 13px; transition: .2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.go {
+  width: 100%; padding: 14px; font-size: 18px; font-weight: 700; letter-spacing: .1em;
+  background: var(--line); color: var(--ink); border: 0; border-radius: 12px; margin-top: 4px;
+}
+
+/* ===== 乗車中 ===== */
+body.riding header { display: none; }
+body.riding main { padding: 12px; }
+.ride {
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr;
+  grid-template-areas: "lcd map" "ctrl map"; gap: 12px 16px; align-items: start;
+}
+.lcd { grid-area: lcd; background: var(--lcd); border-radius: 14px; overflow: hidden; border: 1px solid #000; }
+.lcd-top { background: var(--line); color: var(--ink); padding: 8px 14px; display: flex; justify-content: space-between; font-weight: 700; font-size: 15px; }
+.lcd-main { padding: 18px 16px 16px; text-align: center; container-type: inline-size; }
+.lcd-label { color: var(--accent); font-size: 16px; font-weight: 700; letter-spacing: .2em; }
+/* --n は駅名の文字数。長い駅名でも1行に収まるよう縮める */
+.lcd-name { color: var(--lcd-text); font-size: min(64px, calc(100cqw / (var(--n, 4) * 1.1))); font-weight: 800; line-height: 1.15; letter-spacing: .06em; }
+.lcd-kana { color: var(--muted); font-size: 15px; letter-spacing: .2em; }
+.progress { height: 6px; background: #1c252e; }
+.progress div { height: 100%; width: 0; background: var(--line); }
+
+.mapwrap { grid-area: map; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 4px; }
+#map { width: 100%; height: auto; max-height: calc(100dvh - 40px); display: block; }
+#map .sl { fill: var(--dim); }
+#map .sl.route { fill: var(--text); font-weight: 700; }
+#map .sl.passed { fill: var(--passed); font-weight: 400; }
+#map .sl.next { fill: var(--accent); font-weight: 800; }
+#map .sd { fill: var(--rail); stroke: var(--bg); stroke-width: 2; }
+#map .sd.route { fill: #fff; }
+#map .sd.passed { fill: var(--muted); }
+#map .sd.next { fill: var(--accent); }
+#train circle { fill: var(--line); stroke: #fff; stroke-width: 3; }
+
+.ctrl { grid-area: ctrl; display: flex; gap: 8px; }
+.ctrl button {
+  flex: 1; padding: 12px; font-size: 15px; border-radius: 10px;
+  background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+}
+.ctrl button.primary { background: var(--line); color: var(--ink); border: 0; font-weight: 700; }
+
+@media (max-width: 760px) {
+  /* スマホは1画面に収める：LCD → 路線図（残り全部）→ ボタン */
+  .ride { display: flex; flex-direction: column; align-items: stretch; gap: 10px; height: calc(100dvh - 24px); }
+  .mapwrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: none; border: 0; padding: 0; }
+  #map { width: 100%; height: 100%; }
+  .lcd-main { padding: 10px 12px; }
+  .lcd-name { font-size: min(48px, calc(100cqw / (var(--n, 4) * 1.1))); }
+}
