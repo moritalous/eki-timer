@@ -5,6 +5,8 @@ export const opt = { sfx: true, vibe: false, voice: true, rumble: true };
 let ac, master, nbuf;
 // 音を出せるようにする。ブラウザの制限があるので、タップなどの操作の中で呼ぶ
 export function unlockAudio() {
+  // iPhone はマナーモードだと Web Audio が鳴らないので、音楽再生扱いにする（iOS 17 以降）
+  if ('audioSession' in navigator) navigator.audioSession.type = 'playback';
   if (!ac) {
     ac = new (window.AudioContext || window.webkitAudioContext)();
     master = ac.createGain(); master.gain.value = 0.8; master.connect(ac.destination);

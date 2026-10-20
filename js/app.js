@@ -301,16 +301,9 @@ $('btnStop').addEventListener('click', () => {
 });
 
 // ===== 乗車中の画面 =====
-// 路線図は楕円。スマホ縦では画面の縦長さに合わせて縦に伸ばし、余白を詰める
 let mapRing = ring(150, 150), shownNext = -1;
 function drawMap() {
-  const L = plan.L, box = $('map').parentElement;
-  let ry = 150;
-  if (matchMedia('(max-width: 760px)').matches && box.clientWidth) {
-    const m = 75; // 駅名ぶんのはみ出しの目安
-    ry = Math.max(150, Math.min(150 * 1.55, box.clientHeight / box.clientWidth * (150 + m) - m));
-  }
-  const g = mapRing = ring(150, ry);
+  const L = plan.L, g = mapRing;
   let s = `<g id="mapg"><ellipse class="rail" rx="${g.rx}" ry="${g.ry}"/>`;
   s += `<path class="route-line faint" d="${g.arc(plan.ang[0], plan.ang[plan.ang.length - 1])}"/>`;
   s += `<path class="route-line" id="done"/>`;
