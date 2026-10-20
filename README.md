@@ -52,6 +52,7 @@ python3 -m http.server 8000
 ## 公開
 
 `main` ブランチに push すると、GitHub Actions（`.github/workflows/pages.yml`）が GitHub Pages に公開します。
+公開時に CSS・JS の URL へコミットごとの版番号（`?v=…`）を付けるので、ブラウザのキャッシュで古い版が残りません。
 
 ## 注意
 

@@ -24,11 +24,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/configure-pages@v6
-      # ビルド不要なので、サイトのファイルだけをそのまま公開する
+      # ビルド不要なので、サイトのファイルだけをそのまま公開する。
+      # Pages は 10 分キャッシュされるので、CSS・JS の URL にコミットごとの版番号を付けて古いものを読ませない
       - name: Collect site files
         run: |
           mkdir _site
           cp -r index.html style.css js _site/
+          v="${GITHUB_SHA::7}"
+          sed -i -E "s#(href=\"style\.css|src=\"js/app\.js)\"#\1?v=$v\"#" _site/index.html
+          sed -i -E "s#(from '\./[a-z]+\.js)'#\1?v=$v'#" _site/js/*.js
+          grep -n "?v=" _site/index.html _site/js/*.js
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
